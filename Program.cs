@@ -39,7 +39,7 @@ public class TextFileUtil {
         int count = lines.Count;
         int insertLine = -1;
         for(int i = 0; i < count; i++) {
-            var line = lines[count];
+            var line = lines[i];
             if(line.Contains(findWord)) {
                 insertLine = i+1;
                 lines.Insert(insertLine,toAddState);                
