@@ -62,7 +62,7 @@ public class TextFileUtil
 
         if (insertLine > 0)
         {
-            File.WriteAllLines(filename, lines, System.Text.Encoding.UTF8);
+            File.WriteAllLines(filename, lines);
             return Constants.SUCCESS;
         }
 
