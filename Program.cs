@@ -13,14 +13,18 @@ static class Program
 {
     static async Task<int> Main(string[] args)
     {
+        if (args.Length == 5 && args[0].ToLower().CompareTo("-makeversion") == 0)
+            return PackageInfo.MakePackageInfoScript(args[1], args[2], args[3], args[3]);
+        
         if (args.Length == 4 && args[0].ToLower().CompareTo("-insertline") == 0)
             return TextFileUtil.FindAndInsert(args[1], args[2], args[3]);
 
         if (args.Length == 3 && args[0].ToLower().CompareTo("-slack") == 0)
             return await WebhookUtil.SendSlack(args[1], args[2]);
 
-        Console.WriteLine("Useses(Insert line) : TextUtil.ext -insertline <filename> <existing statement> <to add statement>");
-        Console.WriteLine("Useses(Slack Message) : TextUtil.ext -slack <webhook url> <message>");
+        Console.WriteLine("Useses(Insert line) : TextUtil.exe -insertline <filename> <existing statement> <to add statement>");
+        Console.WriteLine("Useses(Slack Message) : TextUtil.exe -slack <webhook url> <message>");
+        Console.WriteLine("Useses(Make Package Version) : TextUtile.exe -makeversion <version file path> <namespace> <packageName> <packageVersion>");
 
         return Constants.FAIL;
     }
@@ -98,5 +102,28 @@ public static class WebhookUtil
 
         HttpResponseMessage response = await client.SendAsync(request);
         return response.StatusCode == HttpStatusCode.OK ? Constants.SUCCESS : Constants.FAIL;
+    }
+}
+
+public static class PackageInfo
+{
+    public static int MakePackageInfoScript(string filename, string namespaceName, string packageName, string packageVersion)
+    {
+        if (string.IsNullOrWhiteSpace(filename) || string.IsNullOrWhiteSpace(namespaceName) || string.IsNullOrWhiteSpace(packageName) || string.IsNullOrWhiteSpace(packageVersion))
+            return Constants.FAIL;
+        
+        StringBuilder build = new StringBuilder();
+        build.AppendLine("namespace " + namespaceName);
+        build.AppendLine("{");
+        build.AppendLine("  public class PackageInfo");
+        build.AppendLine("  {");
+        build.AppendLine("      public const string Name = \"" + packageName + "\";");
+        build.AppendLine("      public const string Version = \"" + packageVersion + "\";");
+        build.AppendLine("  }");
+        build.AppendLine("}");
+
+        File.WriteAllText(filename, build.ToString());
+
+        return Constants.SUCCESS;
     }
 }
