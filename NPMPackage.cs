@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.IO;
 
 namespace TextUtil
@@ -18,8 +19,7 @@ namespace TextUtil
             JObject root = JObject.Parse(json);
             SetValueForChildJObject("_upm", "changelog", changelog, root);
             SetValueForChildJObject("_upmCi", "footprint", footprint, root);
-            File.WriteAllText(filePath, JsonConvert.SerializeObject(root));
-
+            File.WriteAllText(filePath, JsonConvert.SerializeObject(root,Formatting.Indented));
             return true;
         }
 
@@ -33,13 +33,13 @@ namespace TextUtil
                 return string.Empty;
 
             JObject root = JObject.Parse(json);
-            if (root.ContainsKey("_upmCi") && root["_upmCi"] is JObject)
+            if (root.ContainsKey("_upmCi") && root["_upmCi"] is JObject _upmCi)
             {
-                if (root["_upmCi"] is JObject upmCi && upmCi.ContainsKey("footprint"))
+                if (_upmCi != null && _upmCi.ContainsKey("footprint"))
                 {
-                    if (upmCi["footprint"] is not JObject footprint)
+                    if (_upmCi["footprint"] == null)
                         return string.Empty;
-                    return footprint.ToString();
+                    return _upmCi["footprint"]!.ToString();
                 }
             }
 
@@ -52,7 +52,10 @@ namespace TextUtil
             if (root.ContainsKey(propertyName))
                 child = root[propertyName] as JObject;
             else
+            {
                 child = new JObject();
+                root[propertyName] = child;
+            }
             
             if(child != null)
                 child[childPropertyName] = childValue;
