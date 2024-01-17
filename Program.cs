@@ -8,23 +8,25 @@ using System.Text.Json;
 using System.Text;
 using System.Net.Http.Headers;
 using System.Net.Http;
+using System.Text.Json.Serialization;
 
 static class Program
 {
     static async Task<int> Main(string[] args)
     {
-        if (args.Length == 5 && args[0].ToLower().CompareTo("-makeversion") == 0)
-            return PackageInfo.MakePackageInfoScript(args[1], args[2], args[3], args[3]);
-        
+        if (args.Length == 3 && args[0].ToLower().CompareTo("-makeversion") == 0)
+            return PackageInfo.MakePackageInfoScript(args[1], args[2]);
+
         if (args.Length == 4 && args[0].ToLower().CompareTo("-insertline") == 0)
             return TextFileUtil.FindAndInsert(args[1], args[2], args[3]);
 
         if (args.Length == 3 && args[0].ToLower().CompareTo("-slack") == 0)
             return await WebhookUtil.SendSlack(args[1], args[2]);
 
+
         Console.WriteLine("Useses(Insert line) : TextUtil.exe -insertline <filename> <existing statement> <to add statement>");
         Console.WriteLine("Useses(Slack Message) : TextUtil.exe -slack <webhook url> <message>");
-        Console.WriteLine("Useses(Make Package Version) : TextUtile.exe -makeversion <version file path> <namespace> <packageName> <packageVersion>");
+        Console.WriteLine("Useses(Make Package Version) : TextUtile.exe -makeversion <to make version file path> <namespace>");
 
         return Constants.FAIL;
     }
@@ -105,8 +107,33 @@ public static class WebhookUtil
     }
 }
 
+public class NPMPackageInfo
+{
+    public string name { get; set; }
+    public string version { get; set; }
+}
+
 public static class PackageInfo
 {
+    public static int MakePackageInfoScript(string fileName, string namespaceName)
+    {
+        string packageJsonFile = "package.json";
+        
+        if (!File.Exists(packageJsonFile))
+        {
+            Console.WriteLine($"File not found : {packageJsonFile}");
+            return Constants.FAIL;
+        }
+        var packageInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<NPMPackageInfo>(File.ReadAllText(packageJsonFile));
+        if(packageInfo == null)
+        {
+            Console.WriteLine($"Not json file : {packageJsonFile}");
+            return Constants.FAIL;
+        }
+
+        return MakePackageInfoScript(fileName, namespaceName, packageInfo.name, packageInfo.version);
+    }
+    
     public static int MakePackageInfoScript(string filename, string namespaceName, string packageName, string packageVersion)
     {
         if (string.IsNullOrWhiteSpace(filename) || string.IsNullOrWhiteSpace(namespaceName) || string.IsNullOrWhiteSpace(packageName) || string.IsNullOrWhiteSpace(packageVersion))
