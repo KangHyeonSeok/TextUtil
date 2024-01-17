@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -20,6 +18,9 @@ static class Program
         if (args.Length == 4 && args[0].ToLower().CompareTo("-insertline") == 0)
             return TextFileUtil.FindAndInsert(args[1], args[2], args[3]);
 
+        if (args.Length == 3 && args[0].ToLower().CompareTo("-removeline") == 0)
+            return TextFileUtil.FindAndDelete(args[1], args[2]);
+
         if (args.Length == 3 && args[0].ToLower().CompareTo("-slack") == 0)
             return await WebhookUtil.SendSlack(args[1], args[2]);
 
@@ -36,7 +37,7 @@ static class Program
                 return Constants.FAIL;
             }
             string changelog = File.ReadAllText(args[1]);
-            if(NPMPackage.SetChangeLogAndFootprint("package.json", changelog, args[2]))
+            if (NPMPackage.SetChangeLogAndFootprint("package.json", changelog, args[2]))
                 return Constants.SUCCESS;
             return Constants.FAIL;
         }
@@ -50,7 +51,7 @@ static class Program
             }
 
             string commitId = NPMPackage.GetFootprint("package.json");
-            
+
             if (string.IsNullOrWhiteSpace(commitId))
                 return Constants.FAIL;
             else
@@ -61,6 +62,7 @@ static class Program
         }
 
         Console.WriteLine("Useses(Insert line) : TextUtil.exe -insertline <filename> <existing statement> <to add statement>");
+        Console.WriteLine("Useses(Remove line) : TextUtil.exe -removeline <filename> <existing statement>");
         Console.WriteLine("Useses(Slack Message) : TextUtil.exe -slack <webhook url> <message>");
         Console.WriteLine("Useses(Make Package Version) : TextUtile.exe -makeversion <to make version file path> <namespace>");
         Console.WriteLine("Useses(Get commitID) : TextUtile.exe -commitid");
@@ -74,44 +76,6 @@ public static class Constants
 {
     public const int SUCCESS = 0;
     public const int FAIL = 1;
-}
-
-public class TextFileUtil
-{
-    public static int FindAndInsert(string filename, string findWord, string toAddState)
-    {
-
-        if (!File.Exists(filename))
-        {
-            Console.WriteLine($"File not found : {filename}");
-            return Constants.FAIL;
-        }
-
-        List<string> lines = File.ReadAllLines(filename).ToList();
-        if (lines == null || lines.Count < 1)
-            return Constants.FAIL;
-
-        int count = lines.Count;
-        int insertLine = -1;
-        for (int i = 0; i < count; i++)
-        {
-            var line = lines[i];
-            if (line.Contains(findWord))
-            {
-                insertLine = i + 1;
-                lines.Insert(insertLine, toAddState);
-                break;
-            }
-        }
-
-        if (insertLine > 0)
-        {
-            File.WriteAllLines(filename, lines);
-            return Constants.SUCCESS;
-        }
-
-        return Constants.FAIL;
-    }
 }
 
 public static class WebhookUtil
