@@ -1,14 +1,14 @@
-﻿using System.Threading.Tasks;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System;
 using System.Linq;
 using System.Net;
-using System.Text.Json;
-using System.Text;
-using System.Net.Http.Headers;
 using System.Net.Http;
-using System.Text.Json.Serialization;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+using TextUtil;
 
 static class Program
 {
@@ -23,10 +23,48 @@ static class Program
         if (args.Length == 3 && args[0].ToLower().CompareTo("-slack") == 0)
             return await WebhookUtil.SendSlack(args[1], args[2]);
 
+        if (args.Length == 3 && args[0].ToLower().CompareTo("-changelog") == 0)
+        {
+            if (!File.Exists("package.json"))
+            {
+                Console.WriteLine("package.json not found");
+                return Constants.FAIL;
+            }
+            if (!File.Exists(args[1]))
+            {
+                Console.WriteLine(args[1] + "can not find.");
+                return Constants.FAIL;
+            }
+            string changelog = File.ReadAllText(args[1]);
+            if(NPMPackage.SetChangeLogAndFootprint("package.json", changelog, args[2]))
+                return Constants.SUCCESS;
+            return Constants.FAIL;
+        }
+
+        if (args.Length == 1 && args[0].ToLower().CompareTo("-commitid") == 0)
+        {
+            if (!File.Exists("package.json"))
+            {
+                Console.WriteLine("package.json not found");
+                return Constants.FAIL;
+            }
+
+            string commitId = NPMPackage.GetFootprint("package.json");
+            
+            if (string.IsNullOrWhiteSpace(commitId))
+                return Constants.FAIL;
+            else
+            {
+                Console.WriteLine(commitId);
+                return Constants.SUCCESS;
+            }
+        }
 
         Console.WriteLine("Useses(Insert line) : TextUtil.exe -insertline <filename> <existing statement> <to add statement>");
         Console.WriteLine("Useses(Slack Message) : TextUtil.exe -slack <webhook url> <message>");
         Console.WriteLine("Useses(Make Package Version) : TextUtile.exe -makeversion <to make version file path> <namespace>");
+        Console.WriteLine("Useses(Get commitID) : TextUtile.exe -commitid");
+        Console.WriteLine("Useses(Set changelog) : TextUtile.exe -changelog <changelog file> <commitid>");
 
         return Constants.FAIL;
     }
@@ -118,14 +156,14 @@ public static class PackageInfo
     public static int MakePackageInfoScript(string fileName, string namespaceName)
     {
         string packageJsonFile = "package.json";
-        
+
         if (!File.Exists(packageJsonFile))
         {
             Console.WriteLine($"File not found : {packageJsonFile}");
             return Constants.FAIL;
         }
         var packageInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<NPMPackageInfo>(File.ReadAllText(packageJsonFile));
-        if(packageInfo == null)
+        if (packageInfo == null)
         {
             Console.WriteLine($"Not json file : {packageJsonFile}");
             return Constants.FAIL;
@@ -133,12 +171,12 @@ public static class PackageInfo
 
         return MakePackageInfoScript(fileName, namespaceName, packageInfo.name, packageInfo.version);
     }
-    
+
     public static int MakePackageInfoScript(string filename, string namespaceName, string packageName, string packageVersion)
     {
         if (string.IsNullOrWhiteSpace(filename) || string.IsNullOrWhiteSpace(namespaceName) || string.IsNullOrWhiteSpace(packageName) || string.IsNullOrWhiteSpace(packageVersion))
             return Constants.FAIL;
-        
+
         StringBuilder build = new StringBuilder();
         build.AppendLine("namespace " + namespaceName);
         build.AppendLine("{");
